@@ -7,6 +7,7 @@ import (
 	"log"
 	"database/sql"
 	"fmt"
+	"encoding/json"
 )
 
 type Image struct{
@@ -15,31 +16,38 @@ type Image struct{
 }
 
 
-
-
-
-
 func show_all(w http.ResponseWriter, r *http.Request){
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		database, _ := sql.Open("sqlite3", "./images.db")
-		statement, _  := database.Prepare("CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)")
-		statement.Exec()
-		rows, _ := database.Query("SELECT id, path from images")
-		var id int
-		var all_images []Image
-		var path string
+		if r.Method == "GET"{
+			var id int
+ 			all_images := []map[int]string{}
+			var path string
+
+			database, _ := sql.Open("sqlite3", "./images.db")
+			statement, _  := database.Prepare("CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)")
+			statement.Exec()
+			rows, _ := database.Query("SELECT id, path from images")
+
 		for rows.Next(){
-	 	rows.Scan(&id, &path)
-		append(all_images, Image{id, path})
+			rows.Scan(&id, &path)
+			fmt.Println(id,path)
+			all_images = append(all_images, map[int]string{id: path})
 		}
-			w.Write([]byte(`{"message":1)`))
-	// } else {
-	// 	w.WriteHeader(http.StatusMethodNotAllowed)
-	// 	 w.Header().Set("Content-Type", "application/json")
-	// 	 w.Write([]byte(`{"message": "method not allowed"}`))
-	// }
+
+		  //js,err := json.Marshall(all_images)
+			// json.NewEncoder(w).Encode(all_images)
+		 w.WriteHeader(http.StatusOK)
+ 		 w.Header().Set("Content-Type", "application/json")
+		 output := make(map[string][]map)
+	 	 output["message"] = all_images
+		 json.NewEncoder(w).Encode(output)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	 	w.Header().Set("Content-Type", "application/json")
+	 	w.Write([]byte(`{"message": "method not allowed"}`))
+	 }
 }
+
+
 
 
 
@@ -49,6 +57,7 @@ func show_all(w http.ResponseWriter, r *http.Request){
 func main() {
 		router := mux.NewRouter().StrictSlash(true)
 		router.HandleFunc("/", show_all)
+		// router.HandleFunc("/add_image",add_image)
 		log.Fatal(http.ListenAndServe(":8080", router))
 
 }

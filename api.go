@@ -10,15 +10,12 @@ import (
 	"encoding/json"
 )
 
-
-
-
-
 func show_all(w http.ResponseWriter, r *http.Request){
 			if r.Method == "GET"{
 				var id int
-	 			all_images := []map[int]string{}
 				var path string
+	 			all_images := []map[int]string{}
+				result := make(map[string][]map[int]string)
 
 				database, _ := sql.Open("sqlite3", "./images.db")
 				statement, _  := database.Prepare("CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)")
@@ -29,15 +26,15 @@ func show_all(w http.ResponseWriter, r *http.Request){
 				rows.Scan(&id, &path)
 				all_images = append(all_images, map[int]string{id: path})
 			}
-
-			  //js,err := json.Marshall(all_images)
-				// json.NewEncoder(w).Encode(all_images)
+			result["messages"]=all_images
 			 w.WriteHeader(http.StatusOK)
 	 		 w.Header().Set("Content-Type", "application/json")
-			 json.NewEncoder(w).Encode(all_images)
+			 json.NewEncoder(w).Encode(result)
+
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
-		 	w.Header().Set("Content-Type", "application/json")
+		 	w.Header().Set("Content-Type", "appli
+				cation/json")
 		 	w.Write([]byte(`{"message": "method not allowed"}`))
 		 }
 	}
@@ -86,17 +83,10 @@ func delete_image_by_id(w http.ResponseWriter, r *http.Request){
 
 }
 
-
-
-
-
-
-
 func main() {
 		router := mux.NewRouter().StrictSlash(true)
 		router.HandleFunc("/", show_all)
 		router.HandleFunc("/add_image/",add_image)
 		router.HandleFunc("/delete_image/",delete_image_by_id)
 		log.Fatal(http.ListenAndServe(":8080", router))
-
 }
